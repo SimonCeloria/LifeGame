@@ -7,7 +7,7 @@ import pygame
 import time
 
 # Constants
-pauseExec = False
+pauseExec = True
 running = True
 
 # Init
@@ -44,7 +44,8 @@ while running:
 
     for action in event:
         if action.type == pygame.KEYDOWN:
-            pauseExec = not pauseExec
+            if action.key == pygame.K_SPACE:
+                pauseExec = not pauseExec
 
             if action.key == pygame.K_q:
                 running = not running
