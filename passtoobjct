@@ -1,0 +1,112 @@
+# This is a following of a video from https://www.youtube.com/watch?v=qPtKv9fSHZY&ab_channel=DotCSV with
+# any corrections :)
+
+# Imports
+import numpy as np
+import pygame
+import time
+from constants import *
+
+
+class LifeGame(object):
+    """
+    A life game from John Conway
+    """
+
+    def __init__(self):
+        # Constants
+        self.mouseclick = None
+        self.newGameState = None
+        self.pause = True
+        self.running = True
+        # Initialize game
+        pygame.init()
+        # Screen values
+        self.width, self.height = SCREEN_DIMENSIONS
+        self.screen = pygame.display.set_mode((self.height, self.width))
+        # Background painting
+        self.bg = BG_COLOR
+        self.screen.fill(self.bg)
+        # Number of cells
+        self.nxC, self.nyC = NUMBER_OF_CELLS
+        # Cell dimensions
+        self.dimCW = self.width / self.nxC
+        self.dimCH = self.height / self.nyC
+        # Cell state (1 -> alive 0 -> dead)
+        self.gameState = np.zeros((self.nxC, self.nyC))  # np.zero creates a multidimensional array with zeros
+
+    def gameloop(self):
+        while self.running:
+            self.newGameState = np.copy(self.gameState)
+
+            self.screen.fill(self.bg)
+            time.sleep(DELAY)
+
+            event = pygame.event.get()
+
+            for action in event:
+                if action.type == pygame.KEYDOWN:
+                    if action.key == pygame.K_SPACE:
+                        self.pause = not self.pause
+
+                    if action.key == pygame.K_q:
+                        self.running = not self.running
+
+                self.mouseclick = pygame.mouse.get_pressed()
+
+                if sum(self.mouseclick) > 0:
+                    posx, posy = pygame.mouse.get_pos()
+                    celx, cely = int(np.floor(posx / self.dimCW)), int(np.floor(posy / self.dimCH))
+                    self.newGameState[celx, cely] = not self.mouseclick[2]
+            for y in range(0, self.nxC):
+                for x in range(0, self.nyC):
+
+                    if not self.pause:
+
+                        # Calculate number of neighbors
+                        n_neigh = self.gameState[(x - 1) % self.nxC, (y - 1) % self.nyC] + \
+                                  self.gameState[x % self.nxC, (y - 1) % self.nyC] + \
+                                  self.gameState[(x + 1) % self.nxC, (y - 1) % self.nyC] + \
+                                  self.gameState[(x - 1) % self.nxC, y % self.nyC] + \
+                                  self.gameState[(x + 1) % self.nxC, y % self.nyC] + \
+                                  self.gameState[(x - 1) % self.nxC, (y + 1) % self.nyC] + \
+                                  self.gameState[x % self.nxC, (y + 1) % self.nyC] + \
+                                  self.gameState[(x + 1) % self.nxC, (y + 1) % self.nyC]
+
+                        # Rule 1: A dead cell with three alive neighbor revives
+                        if self.gameState[x, y] == DEAD and n_neigh == HEALERS:
+                            self.newGameState[x, y] = ALIVE
+
+                        # Rule 2: A living cell with less than two or more than three living neighbors dies.
+                        elif self.gameState[x, y] == ALIVE and (n_neigh < STARVATION or n_neigh > HEALERS):
+                            self.newGameState[x, y] = DEAD
+
+                    # Background grill
+                    poly = [(x * self.dimCW, y * self.dimCH),
+                            ((x + 1) * self.dimCW, y * self.dimCH),
+                            ((x + 1) * self.dimCW, (y + 1) * self.dimCH),
+                            (x * self.dimCW, (y + 1) * self.dimCW)]
+                    # Print grill and cells
+                    if self.newGameState[x, y] == 0:
+                        pygame.draw.polygon(self.screen, DEAD_CELL_COLOR, poly, ALIVE_WIDTH)
+                    else:
+                        pygame.draw.polygon(self.screen, ALIVE_CELL_COLOR, poly, DEAD_WIDTH)
+
+            # Actualize the game
+            self.gameState = np.copy(self.newGameState)
+
+            # Display game
+            pygame.display.flip()
+
+    def main(self):
+        """
+        Run the game
+        """
+        self.__init__()
+        self.gameloop()
+
+
+if __name__ == '__main__':
+    game = LifeGame()  # Creates an instance of LifeGame
+    game.main()  # Calls main() method from created instance
+
